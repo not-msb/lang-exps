@@ -1,0 +1,196 @@
+#![feature(box_patterns)]
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, Copy)]
+enum Location {
+    Register(usize),
+}
+
+#[derive(Debug, Clone)]
+enum Type {
+    U8,
+}
+
+impl Type {
+    fn size(&self) -> usize {
+        match self {
+            Type::U8 => 1,
+        }
+    }
+
+    fn reg_size(&self) -> Option<&'static str> {
+        match self.size() {
+            1 => Some("byte"),
+            2 => Some("word"),
+            4 => Some("dword"),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum Op<'op> {
+    Register(usize),
+    Integer(usize),
+    Identifier(&'op str),
+    Tuple {
+        elems: Vec<Op<'op>>,
+    },
+    Lambda {
+        expr: Box<Op<'op>>,
+    },
+    Call {
+        name: &'op str,
+        arg: Box<Op<'op>>
+    },
+    Assign {
+        dst: Box<Op<'op>>,
+        src: Box<Op<'op>>,
+    },
+}
+
+#[derive(Debug, Clone)]
+struct Symbol {
+    locs: Vec<Location>,
+    ty: Type,
+}
+
+#[derive(Debug, Clone)]
+struct Context<'ctx> {
+    symbols: HashMap<&'ctx str, Symbol>,
+    registers: HashMap<usize, Option<&'ctx str>>,
+}
+
+impl<'ctx> Context<'ctx> {
+    fn new() -> Self {
+        Self {
+            symbols: HashMap::new(),
+            registers: HashMap::new(),
+        }
+    }
+
+    fn get(&self, key: &str) -> Option<&Symbol> {
+        self.symbols.get(key)
+    }
+
+    fn alloc_reg(&mut self, name: Option<&'ctx str>) -> usize {
+        let mut reg = 0;
+        let mut keys: Vec<usize> = self.registers.clone().into_keys().collect();
+        keys.sort();
+
+        for key in keys {
+            if key == reg {
+                reg += 1;
+            } else {
+                break;
+            }
+        }
+
+        self.registers.insert(reg, name);
+        reg
+    }
+
+    fn insert(&mut self, key: &'ctx str, symbol: Symbol) {
+        self.symbols.insert(key, symbol);
+    }
+}
+
+/* fn eval<'e>(ctx: &mut Context<'e>, op: Op<'e>, ty: Type) -> Op<'e> {
+    match op {
+        Op::Integer(i) => {
+            let reg = ctx.alloc_reg(None);
+            println!("mov {} {{{}}}, {}", ty.reg_size().unwrap(), reg, i);
+            return Op::Register(reg);
+        },
+        Op::Identifier(name) => {
+            let reg = ctx.alloc_reg(Some(name));
+            let symbol = Symbol {
+                locs: vec![Location::Register(reg)],
+                ty: ty.clone(),
+            };
+            ctx.insert(name, symbol);
+            return Op::Register(reg);
+        },
+        Op::Assign { dst, src } => {
+            let dst = eval(ctx, *dst, ty.clone());
+            let src = eval(ctx, *src, ty.clone());
+
+            match (&dst, src) {
+                (Op::Register(i), Op::Register(j)) => {
+                    println!("mov {{{}}}, {{{}}}", i, j);
+                    // TODO: Need to call some sort of cleanup for the registers
+                    ctx.registers.retain(|_, v| v.is_some());
+                    return dst;
+                },
+                _ => todo!(),
+            }
+        },
+        _ => todo!(),
+    }
+} */
+
+fn main() {
+    let op = Op::Assign {
+        dst: Box::new(Op::Identifier("x")),
+        src: Box::new(Op::Integer(0)),
+    };
+
+    match op {
+        Op::Assign {
+            dst: box Op::Identifier(name),
+            src: box Op::Integer(i),
+        } => {
+            println!("Assignment ident && int");
+        },
+        _ => todo!("No pattern found"),
+    }
+}
+
+/* fn main2() {
+    /*
+     * main = || void
+     *   log "abc"
+    */
+
+    todo!("Implement Op::Lambda and create new rewrite rules for Op::Identifier and Op::Assign");
+    let ops = vec![
+        Op::Assign {
+            dst: Box::new(Op::Identifier("main")),
+            src: Box::new(Op::Lambda {
+                expr: Box::new(Op::Call {
+                    name: "log",
+                    arg: Box::new(Op::Tuple {
+                        elems: vec![
+                            Op::Integer(97),
+                            Op::Integer(98),
+                            Op::Integer(99),
+                        ]
+                    }),
+                }),
+            }),
+        },
+    ];
+
+    // x = 3 + (x = 1 + 2)
+    //let ops = vec![
+    //    Op::Assign {
+    //        dst: Box::new(Op::Identifier("x")),
+    //        src: Box::new(Op::CallBuiltin(Builtin::Add {
+    //            dst: Box::new(Op::Assign {
+    //                dst: Box::new(Op::Identifier("x")),
+    //                src: Box::new(Op::CallBuiltin(Builtin::Add {
+    //                    dst: Box::new(Op::Integer(1)),
+    //                    src: Box::new(Op::Integer(2)),
+    //                })),
+    //            }),
+    //            src: Box::new(Op::Integer(3)),
+    //        })),
+    //    },
+    //];
+
+    for op in ops {
+        let mut ctx = Context::new();
+        eval(&mut ctx, op, Type::U8);
+        println!("\n{ctx:#?}");
+    }
+} */

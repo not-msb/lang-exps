@@ -1,0 +1,231 @@
+#![feature(let_chains)]
+#![feature(box_patterns)]
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, Copy)]
+enum Location {
+    Register(usize),
+}
+
+#[derive(Debug, Clone)]
+enum Type {
+    Function {
+        params: Vec<Type>,
+        ret: Box<Type>,
+    },
+    NoReturn,
+    U8,
+}
+
+impl Type {
+    fn size(&self) -> usize {
+        match self {
+            Type::Function { .. } => 4,
+            Type::NoReturn => 0,
+            Type::U8 => 1,
+        }
+    }
+
+    fn reg_size(&self) -> Option<&'static str> {
+        match self.size() {
+            1 => Some("byte"),
+            2 => Some("word"),
+            4 => Some("dword"),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+enum Op<'op> {
+    Register(usize),
+    Integer(usize),
+    Identifier(&'op str),
+    Lambda {
+        expr: Box<Op<'op>>,
+    },
+    Return {
+        expr: Box<Op<'op>>
+    },
+    Assign {
+        dst: Box<Op<'op>>,
+        src: Box<Op<'op>>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+enum SymbolKind {
+    Variable,
+    Parameter,
+}
+
+#[derive(Debug, Clone)]
+struct Symbol {
+    kind: SymbolKind,
+    locs: Vec<Location>,
+    ty: Type,
+}
+
+#[derive(Debug, Clone)]
+struct Context<'ctx> {
+    symbols: HashMap<&'ctx str, Symbol>,
+    registers: HashMap<usize, Option<&'ctx str>>,
+    ret_ty: Type,
+}
+
+impl<'ctx> Context<'ctx> {
+    fn new(ty: Type) -> Self {
+        Self {
+            symbols: HashMap::new(),
+            registers: HashMap::new(),
+            ret_ty: ty,
+        }
+    }
+
+    fn get(&self, key: &str) -> Option<&Symbol> {
+        self.symbols.get(key)
+    }
+
+    fn get_parameters(&self) -> HashMap<&str, Symbol> {
+        let mut cloned = self.symbols.clone();
+        cloned.retain(|_, symbol| symbol.kind == SymbolKind::Parameter);
+        cloned
+    }
+
+    fn alloc_reg(&mut self, name: Option<&'ctx str>) -> usize {
+        let mut reg = 0;
+        let mut keys: Vec<usize> = self.registers.clone().into_keys().collect();
+        keys.sort();
+
+        for key in keys {
+            if key == reg {
+                reg += 1;
+            } else {
+                break;
+            }
+        }
+
+        self.registers.insert(reg, name);
+        reg
+    }
+
+    fn insert(&mut self, key: &'ctx str, symbol: Symbol) {
+        self.symbols.insert(key, symbol);
+    }
+
+    fn compile(&mut self, op: &mut Op<'ctx>, ty: Type) {
+        //println!("/*{op:#?}*/");
+        match op {
+            Op::Integer(i) => {
+                let reg = self.alloc_reg(None);
+                println!("mov {{{}}}, {}", reg, i);
+                *op = Op::Register(reg);
+            },
+            Op::Return { expr: box Op::Register(r) } => {
+                println!("; Return");
+                let mut mem = 4;
+                let params = self.get_parameters();
+                for param in params.into_values() {
+                    mem += param.ty.size();
+                }
+                let reg_size = self.ret_ty.reg_size().unwrap();
+                println!("mov {} [esp+4], {{{}}}", reg_size, r);
+                println!("ret");
+            },
+            Op::Return { expr } => {
+                println!("; Return - Rewrite");
+                self.compile(expr, self.ret_ty.clone());
+                self.compile(op, self.ret_ty.clone());
+            },
+            Op::Assign {
+                dst: box Op::Identifier(name),
+                src: box Op::Register(r),
+            } => {
+                let reg = self.alloc_reg(Some(name));
+                let loc = Location::Register(reg);
+                let symbol = self.symbols.get_mut(name).unwrap();
+
+                println!("; Assign - Ident && Int");
+                println!("mov {{{}}}, {{{}}}", r, reg);
+
+                symbol.locs.push(loc);
+                *op = Op::Register(*r);
+            },
+            Op::Assign {
+                dst: box Op::Identifier(name),
+                src: box Op::Lambda { expr },
+            } => {
+                println!("; Assign - Ident && Lambda");
+                println!("{}:", name);
+                self.compile(expr, ty);
+                *op = Op::Identifier(name);
+            },
+            Op::Assign {
+                dst: box Op::Identifier(_),
+                src,
+            } => {
+                println!("; Assign - Ident - Rewrite");
+                self.compile(src, ty.clone());
+                self.compile(op, ty);
+            },
+            _ => todo!(),
+        }
+    }
+}
+
+fn main() {
+    let mut ctx = Context::new(Type::U8);
+    ctx.insert("main", Symbol {
+        kind: SymbolKind::Variable,
+        locs: vec![],
+        ty: Type::Function {
+            params: vec![],
+            ret: Box::new(Type::U8),
+        },
+    });
+
+    ctx.insert("y", Symbol {
+        kind: SymbolKind::Variable,
+        locs: vec![],
+        ty: Type::U8,
+    });
+
+    ctx.insert("x", Symbol {
+        kind: SymbolKind::Variable,
+        locs: vec![],
+        ty: Type::U8,
+    });
+
+    let mut op = Op::Assign {
+        dst: Box::new(Op::Identifier("main")),
+        src: Box::new(Op::Lambda {
+            expr: Box::new(Op::Return {
+                expr: Box::new(Op::Integer(0)),
+            }),
+        }),
+    };
+
+    //let mut op = Op::Assign {
+    //    dst: Box::new(Op::Identifier("y")),
+    //    src: Box::new(Op::Assign {
+    //        dst: Box::new(Op::Identifier("x")),
+    //        src: Box::new(Op::Integer(0)),
+    //    }),
+    //};
+
+    ctx.compile(&mut op, Type::Function {
+        params: vec![],
+        ret: Box::new(Type::U8),
+    });
+    println!("\n{ctx:#?}");
+
+    /* match op {
+        Op::Assign {
+            dst: box Op::Identifier(name),
+            src: box Op::Integer(i),
+        } => {
+            println!("Assignment ident && int");
+        },
+        _ => todo!("No pattern found"),
+    } */
+}

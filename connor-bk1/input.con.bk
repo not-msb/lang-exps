@@ -1,0 +1,70 @@
+// This file will be manually compiled
+
+// Input
+// @write: (i32, *u8, usize) -> isize
+// @read: (i32, *mut u8, usize) -> isize
+// @cast: type -> type
+// +: T. (T, T) -> T
+// -: T. (T, T) -> T
+// *: T. (T, T) -> T
+// /: T. (T, T) -> (T, T)
+// &: T. T -> &mut T
+
+header: []u8 = "#include <unistd.h>\nchar r[65536],*e=r;\nint main(){\n" //52
+footer: []u8 = "return 0;\n}\n" //12
+
+main: void -> u8 = lambda V: void . let (raw, len) = header in @write (1, @cast &raw, len)
+
+// Ast
+=
+    header : []u8
+    "#include <unistd.h>\nchar r[65536],*e=r;\nint main(){\n"
+
+=
+    footer: []u8
+    "return 0;\n}\n"
+=
+    main : void -> u8
+    lambda
+        V : void
+        let : u8
+            ()
+                raw : [52]u8
+                len : usize
+            msg : []u8
+            @write : u8
+                ()
+                    1 : i32
+                    @cast : *u8
+                        & : &[52]u8
+                            raw : [52]u8
+                    len : usize
+
+// Data Table
+{
+    header: "#include <unistd.h>\nchar r[65536],*e=r;\nint main(){\n",
+    header.len: 52,
+}
+
+// Ir 0
+Lambda T0
+    Call T1 @write (1, header, header.len)
+    Ret T1
+Copy main T0
+
+// Ir 0 - opt
+Lambda main
+    Call T0 @write (1, header, 52)
+    Ret T0
+
+// Asm
+header: db "#include <unistd.h>", 10, "char r[65536],*e=r;", 10, "int main(){", 10
+
+main:
+    sub esp, 12
+    mov dword [esp], 1
+    mov dword [esp+4], header
+    mov dword [esp+8], 52
+    call @write
+    add esp, 12
+    ret

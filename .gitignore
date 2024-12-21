@@ -1,0 +1,5 @@
+target
+build
+zig-out
+zig-cache
+.zig-cache

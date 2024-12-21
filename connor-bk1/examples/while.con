@@ -1,0 +1,62 @@
+main = || void {
+    i: mut u8 = 5
+    while != i 0 {
+        @debug i
+        i = - i 1
+    }
+}
+
+// Ir
+Lambda void -> void main () {
+L0:
+    u8* T0 = Alloc u8
+    Store u8* T0, u8 5
+L1:
+    u8 T1 = Load u8* T0
+    bool T2 = Cmp neql u8 T1, u8 0
+    JmpIf bool T2, label L2, label L3
+L2:
+    u8 T3 = Load u8* T0
+    Call @debug, u8 T3
+    u8 T4 = Call -, u8 T3, u8 1
+    Store u8* T0, u8 T4
+    Jmp label L1
+L3:
+    Call return
+}
+
+// Asm
+main:
+.L0:
+    sub esp, 1
+    mov byte [esp], 5
+.L1:
+    mov al, byte [esp]
+    cmp al, 0
+    jne .L2
+    jmp .L3
+.L2:
+    mov al, byte [esp]
+    mov bl, al
+    call @debug
+    sub al, 1
+    mov byte [esp], al
+    jmp .L1
+.L3:
+    add esp, 1
+    ret
+
+@debug:
+    mov byte [buffer], bl
+    add byte [buffer], '0'
+
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, buffer
+    mov edx, 1
+    int 80h
+    ret
+
+segment readable writable
+buffer:
+db 0

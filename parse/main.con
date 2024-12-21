@@ -1,0 +1,16 @@
+extern u32 f(u32 x, u32 c);
+
+export u32 main(u32 a, u32 b) {
+    u8 x = 0;
+    u8 y = 0;
+    while (0 == 0) f;
+    if (0 == 0) x else y;
+
+    void v = {};
+    
+    x = 0;
+    x = 1;
+    return a + b;
+};
+
+export u32 add(u32 a, u32 b) return a + b;

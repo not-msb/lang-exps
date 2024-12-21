@@ -1,0 +1,9 @@
+comptime bool true = 0==0;
+comptime bool false = 0!=0;
+
+export u8 main() {
+    void v1 = if (true) {} else {};
+    v1 = {};
+
+    return 0;
+};

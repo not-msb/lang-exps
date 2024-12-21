@@ -1,0 +1,23 @@
+function l $run_add(l %a,l %b,) {
+@L0
+	%t0 =l add %a, %b
+	ret %t0
+}
+export function l $main() {
+@L0
+	%x =l alloc4 4
+	storew 6, %x
+	%t2 =l call $run_add(l 1,l 2,)
+	%t1 =l call $run_add(l %t2,l 3,)
+	%a =l alloc4 8
+	storel %t1, %a
+	%b =l alloc4 8
+	storel 1, %b
+	%t3 =l loadl %a
+	%t4 =l loadl %b
+	%t5 =l add %t3, %t4
+	storel %t5, %b
+	storel %t5, %a
+	%t6 =l loadl %a
+	ret %t6
+}

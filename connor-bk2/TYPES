@@ -1,0 +1,43 @@
+// This file contains pseudo-code
+// It makes it easier for me to remember the internals of the compiler
+
+Token = union(enum) {
+  whitespace = null,
+  identifier: []const u8 = 0,
+  integer: u32 = 1,
+  plus = 2,
+  minus = 3,
+  star = 4,
+  slash = 5,
+  assign = 6,
+}
+
+Token.Size = 1 + 8 = 9
+
+
+Ast = union(enum) {
+    integer: u32 = 0,
+}
+
+Ast.Size = 1 + 8 = 9
+
+
+IrCode = union(enum) {
+    ret: Register = 0,
+    copy: struct {
+        dst: Register,
+        src: Register,
+    } = 1,
+}
+
+IrCode.Size = 1 + (1 + 1) = 3
+
+
+Register = union(enum) {
+    eax = 0,
+    ecx = 1,
+    edx = 2,
+    ebx = 3,
+}
+
+Register.Size = 1

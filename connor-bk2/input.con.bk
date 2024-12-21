@@ -1,0 +1,38 @@
+// Singular functions
+
+<- -> -> void i32 main => 10 f
+
+<- -> -> -> i32 x i32 f + x 1
+
+<- -> -> (-> i32 x) i32 h ??! == x 0 => x f > x 0 => - x 2 f 0
+//<- -> |> (-> i32 x) i32 h ??! = x 0 1 > x 0 => - x 1 0
+
+? cond_a expr_a expr_b
+?? cond_a expr_a cond_b expr_b expr_c
+??? cond_a expr_a cond_b expr_b cond_c expr_c expr_d
+
+// Builtin
+@(Ident)
+    => This is a builtin function, it's provided by the compiler
+       All builtins:
+        => i32 @read(fd, buffer, len)
+        => i32 @write(fd, buffer, len)
+
+// Operators
+<- : Assign
+(Ident) (Expr)
+(Ident) (Type)
+
+-> : Type Assign
+(Type) (Ident)
+    => Makes (Ident)'s known type (Type)
+(Type1) (Type2)
+    => Makes (Type3) a function type from (Type1) to (Type2)
+
+=> : ???
+
+>> : ???
+
+>>= : ???
+
+let _ in _

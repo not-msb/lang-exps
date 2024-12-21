@@ -1,0 +1,170 @@
+buffer: [32]mut u8 = undefined
+
+main = || void {
+    s = itoa(0)
+    @write(1, @cast s, s.len)
+}
+
+itoa = |n: u32| []u8 {
+    length: mut u32 = 0
+
+    if == n 0 return "0"
+    while != n 0 {
+        q: u32 = % n 10
+        n = / n 10
+        buffer[- 31 length] = + '0' @cast q
+        length = + length 1
+    }
+
+    return buffer[-32 length..]
+}
+
+// Ir
+[32]u8 C0 = Const [32]u8
+[1]u8 C1 = Const [1]u8 "0"
+[]u8 S0 = Point [1]u8 C1
+
+u32 -> []u8 itoa = Lambda (u32 T0) {
+L0:
+    &u32 T1 = Point u32 T0
+    &u32 T8 = Alloc u32
+    Store &u32 T8, u32 0
+    bool T2 = Cmp eql u32 T0, u32 0
+    Jmp bool T2, label L1, label L2
+L1:
+    Call return, []u8 S0
+L2:
+    u32 T3 = Load &u32 T1
+    bool T4 = Cmp neql u32 T3, u32 0
+    Jmp bool T4, label L3, label L4
+L3:
+    u32 T5 = Load &u32 T1
+    u32 T6 = Call %, u32 T5, u32 10
+    u32 T7 = Call /, u32 T5 u32 10
+    Store &u32 T1, u32 T7
+    u8 T9 = Call @cast, u32 T6
+    u8 T10 = Call +, u8 '0', u8 T9
+    u32 T11 = Load &u32 T8
+    u32 T12 = Call -, u32 31, u32 T11
+    &u8 T13 = Point [32]u8 C0, u32 T12
+    Store &u8 T13, u8 T10
+    u32 T14 = Call +, u32 T11, u32 1
+    Store &u32 T8, u32 T14
+    Jmp label L2
+L4:
+    u32 T15 = Load &u32 T8
+    u32 T16 = Call -, u32 32, u32 T15
+    []u8 T17 = Slice [32]u8 C0, u32 T16
+    Call return, []u8 T17
+}
+
+// Asm - Code
+main:
+    sub esp, 12
+    mov dword [esp], 0
+    call itoa
+    add esp, 4
+
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, [esp]
+    mov edx, [esp+4]
+    int 80h
+    add esp, 8
+    ret
+
+ALLOC = 4
+itoa:
+.L0:
+    sub esp, ALLOC
+    cmp dword [esp+ALLOC+4], 0
+    mov dword [esp+ALLOC-4], 0 ; Allocced Size = 4
+    je .L1
+    jmp .L2
+.L1:
+    sub esp, 12
+    mov dword [esp], esp
+    add dword [esp], 12+ALLOC+8
+    mov dword [esp+4], S0
+    mov dword [esp+8], 8
+    call @memcpy
+    add esp, 12+ALLOC
+    ret
+.L2:
+    mov eax, dword [esp+ALLOC+4]
+    cmp eax, 0
+    jne .L3
+    jmp .L4
+.L3:
+    mov eax, dword [esp+ALLOC+4]
+    xor edx, edx
+    mov ecx, 10
+    div ecx
+    mov dword [esp+ALLOC+4], eax
+
+    add dl, '0'
+    lea eax, [C0+31]
+    sub eax, dword [esp+ALLOC-4]
+    mov byte [eax], dl
+    add dword [esp+ALLOC-4], 1
+    jmp .L2
+.L4:
+    mov ecx, dword [esp+ALLOC-4]
+    lea eax, [C0+32]
+    sub eax, ecx
+    mov dword [esp+ALLOC+8], eax
+    mov dword [esp+ALLOC+8+4], ecx
+    add esp, ALLOC
+    ret
+
+// Asm - Data
+S0:
+dd C1
+dd 1
+
+C0:
+rb 32
+
+C1:
+db "0"
+
+// Asm - Code - opt
+ALLOC = 4
+itoa:
+.L0:
+    sub esp, ALLOC
+    cmp dword [esp+ALLOC+4], 0
+    mov dword [esp+ALLOC-4], 0 ; Allocced Size = 4
+    jne .L2
+.L1:
+    mov eax, [S0]
+    mov dword [esp+ALLOC+8], eax
+    mov eax, [S0+4]
+    mov dword [esp+ALLOC+8+4], eax
+    add esp, ALLOC
+    ret
+.L2:
+    mov eax, dword [esp+ALLOC+4]
+    cmp eax, 0
+    je .L4
+.L3:
+    xor edx, edx
+    mov ecx, 10
+    div ecx
+    mov dword [esp+ALLOC+4], eax
+
+    add dl, '0'
+    lea eax, [C0+31]
+    sub eax, dword [esp+ALLOC-4]
+    mov byte [eax], dl
+    add dword [esp+ALLOC-4], 1
+    jmp .L2
+.L4:
+    mov ecx, dword [esp+ALLOC-4]
+    lea eax, [C0+32]
+    sub eax, ecx
+    mov dword [esp+ALLOC+8], eax
+    mov dword [esp+ALLOC+8+4], ecx
+    add esp, ALLOC
+    ret
+

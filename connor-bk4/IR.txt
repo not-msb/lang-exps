@@ -1,0 +1,103 @@
+// Source code
+fn inc(x: i64) i64 // Basic incrementation
+    return + x 1 ;
+
+fn dec(x: i64) i64
+    return - x 1 ;
+
+fn nothing(x: i64) i64
+    return inc(dec(x));
+
+fn HOF(x: i64, f: fn(i64) i64) i64 // Simple higher order function
+    return f(x) ;
+
+fn incHOF(x: i64) i64
+    return HOF(x, inc);
+
+fn decHOF(x: i64) i64
+    return HOF(x, dec);
+
+fn tup(t: (i64, i64)) (i64, i64)
+    return t;
+
+// Intermediate representation
+INC:
+    Init { 1, i64 }, 1
+    Add { 2, i64 }, { 0, i64 }, { 1, i64 }
+    Ret { 2, i64 }
+DEC:
+    Init { 1, i64 }, 1
+    Neg { 2, i64}, { 1, i64 }
+    Add { 3, i64 }, { 0, i64 }, { 2, i64 }
+    Ret { 3, i64 }
+NOTHING:
+    Call { 1, i64 }, "dec", [ { 0, i64 } ]
+    Call { 2, i64 }, "inc", [ { 1, i64 } ]
+    Ret { 2, i64 }
+HOF:
+    Call { 2, i64 }, { 1, i64 }, [ { 0, i64 } ]
+    Ret { 2, i64 }
+INC_HOF:
+    InitLabel { 1, i64 }, "inc"
+    Call { 2, i64 }, "HOF", [ { 0, i64 }, { 1, i64 } ]
+    Ret { 2, i64 }
+DEC_HOF:
+    InitLabel { 1, i64 }, "dec"
+    Call { 2, i64 }, "HOF", [ { 0, i64 }, { 1, i64 } ]
+    Ret { 2, i64 }
+TUP:
+    Ret { 0, (i64, i64) }
+
+// Assembly representation
+INC:
+    mov rsi, 1
+    mov rdx, rdi
+    add rdx, rsi
+    mov rax, rdx
+    ret
+
+// Zig struct equivalent
+const Statement = struct {
+    next: ?*Statement = null,
+    kind: union(enum) {
+        Nop,
+        Init: struct {
+            dst: Register,
+            value: usize,
+        },
+        Label: []const u8,
+        InitLabel: struct {
+            dst: Register,
+            name: []const u8,
+        },
+        Copy: struct {
+            dst: Register,
+            src: Register,
+        },
+        Add: struct {
+            dst: Register,
+            src1: Register,
+            src2: Register,
+        },
+        Neg: struct {
+            dst: Register,
+            src: Register,
+        },
+        Call: struct {
+            dst: Register,
+            address: CallAddress,
+            args: []const Register,
+        },
+        Ret: Register,
+    },
+}
+
+const CallAddress = union(enum) {
+    value: Register,
+    named: []const u8,
+};
+
+const Register = struct {
+    index: usize,
+    ty: Type,
+}

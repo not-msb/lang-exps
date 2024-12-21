@@ -1,0 +1,106 @@
+// This file will be manually compiled
+
+// Input
+// @cast: T. G. T -> G
+// +: T. T -> T -> T
+// -: T. T -> T -> T
+// *: T. T -> T -> T
+// /: T. T -> T -> (T, T)
+// &: T. T -> &mut T
+//
+// @write: volatile (i32, [*]u8, usize) -> isize
+// @read: volatile (i32, [*]mut u8, usize) -> isize
+
+header: []u8 = "#include <unistd.h>\nchar r[65536],*e=r;\nint main(){\n" // 52
+footer: []u8 = "return 0;\n}\n" // 12
+
+main = || void {
+    @write (1, @cast header, header.len)
+
+    while true {
+        c: u8 = 0
+        l: isize = @read (0, @cast &c, 1)
+
+        if == l 0 break
+        if != >> c 7 0 break
+
+        s: []u8 = match c {
+            0 => break,
+            4 => break,
+            '>' => "++e;",
+            '<' => "--e;",
+            '+' => "++*e;",
+            '-' => "--*e;",
+            '.' => "write(1,e,1);",
+            ',' => "read(0,e,1);",
+            '[' => "while(*e){",
+            ']' => "}",
+            else => continue,
+        }
+
+        @write (1, @cast s, s.len)
+    }
+
+    @write (1, @cast footer, footer.len)
+}
+
+// Ast
+assign
+    header : []u8
+    "#include <unistd.h>\nchar r[65536],*e=r;\nint main(){\n"
+
+assign
+    footer : []u8
+    "return 0;\n}\n"
+
+assign
+    main : void -> void
+    lambda : void
+        block : void
+            call : isize
+                @write
+                tuple
+                    1 : i32
+                    call : [*]u8
+                        @cast
+                        header : []u8
+                    dot : usize
+                        header : []u8
+                        len : usize
+            while
+                true
+
+
+// Ir
+Const [6]u8 C0, [6]u8 "#include <unistd.h>\nchar r[65536],*e=r;\nint main(){\n"
+Point []u8 T0, [6]u8 C0
+Copy []u8 msg, []u8 T0
+
+Lambda void -> void T0 () {
+    Copy i32 T2, comptime_int 1
+    Cast [*]u8 T3, []u8 msg
+    Copy usize T4, comptime_int 6
+    Call isize T1, @write, (i32 T2, [*]u8 T3, usize T4)
+    Ret T1
+}
+
+Copy void -> void main, void -> void T0
+
+// Ir - opt 0
+Const [6]u8 C0, [6]u8 "#include <unistd.h>\nchar r[65536],*e=r;\nint main(){\n"
+Point []u8 msg, [6]u8 C0
+
+Lambda void -> void main () {
+    Cast [*]u8 T1, []u8 msg
+    Call isize T0, @write, (i32 1, [*]u8 T1, usize 6)
+    Ret T0
+}
+
+// Ir - opt 1
+Const [6]u8 C0, [6]u8 "#include <unistd.h>\nchar r[65536],*e=r;\nint main(){\n"
+Point [*]u8 msg, [6]u8 C0
+
+Lambda void -> void main () {
+    Call isize T0, @write, (i32 1, [*]u8 msg, usize 6)
+    Ret T0
+}

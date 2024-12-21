@@ -1,0 +1,45 @@
+fn meaning() u8 42
+
+fn inc(x: u8) u8
+    + x 1
+
+fn dec(x: u8) u8
+    - x 1
+
+fn add(x: u8, y: u8) u8
+    + x y
+
+fn nothing(x: u8) u8
+    add(dec(x), 1)
+
+fn double(x: i32) i32
+    * x 2
+
+fn doubleByte(x: u8) u8
+    * x 2
+
+fn square(x: i32) i32
+    * x x
+
+fn squareByte(x: u8) u8
+    * x x
+
+fn one(x: i32) i32
+    / x x
+
+fn meaningBlock() u8 {
+    return 42;
+    return 69;
+}
+
+fn incBlock(x: u8) u8 {
+    const tmp: u8 = + x 1;
+    return tmp;
+}
+
+fn readI32(b1: u8, b2: u8, b3: u8, b4: u8) i32 {
+    const tmp: i32 = + * b2 2 b1;
+    const tmp: i32 = + * b3 4 tmp;
+    const tmp: i32 = + * b4 6 tmp;
+    return tmp;
+}

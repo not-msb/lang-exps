@@ -1,0 +1,64 @@
+// TOKEN
+
+IDENTIFIER
+INTEGER
+"fn"
+"return"
+"const"
+":"
+";"
+","
+"("
+")"
+"{"
+"}"
+"="
+"+"
+"-"
+"*"
+"/"
+"u8"
+"i32"
+
+// AST
+
+program ::=
+    & function_decl*
+
+type ::=
+    & "i32"
+    & "u8"
+
+function_decl ::=
+    & "fn" IDENTIFIER "(" parameters ")" type expression
+
+function_call ::=
+    & IDENTIFIER "(" arguments ")"
+
+parameters ::=
+    & parameters "," parameters
+    & IDENTIFIER ":" type
+
+arguments ::=
+    & arguments "," arguments
+    & expression
+
+statement ::=
+    & return expression ";"
+    & assignment
+
+assignment ::=
+    & "const" IDENTIFIER ":" type "=" expression ";"
+
+block ::=
+    & "{" statements* "}"
+
+expression ::=
+    & IDENTIFIER
+    & INTEGER
+    & function_call
+    & block
+    & "+" expression expression
+    & "-" expression expression
+    & "*" expression expression
+    & "/" expression expression

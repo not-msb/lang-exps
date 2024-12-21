@@ -1,0 +1,17 @@
+[package]
+name = "connor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[[bin]]
+name = "connor"
+path = "main.rs"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+opt-level = "s"
+lto = true
+#strip = true

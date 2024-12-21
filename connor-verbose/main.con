@@ -1,0 +1,18 @@
+// TODO: Add context in parsing phase
+
+// add: u8 -> u8 -> u8
+
+// Entry function
+export u8 main() {
+    return 1;
+}
+
+export u8 add(u8 a, u8 b) {
+    // a : u32 = 10;
+    return add_u8 a b;
+}
+
+export u32 max_u32() {
+    return 4294967295;
+    //return (100,);
+}

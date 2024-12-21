@@ -1,0 +1,48 @@
+// Rules
+<type> ::=
+    | <type> "->" <type>        // function
+    | IDENT . <type>            // generic type
+    | <tuple>(<type>)           // tuple
+    | "[]" <type>               // array -> (&fixed array, INTEGER)
+    | '[' INTEGER ']' <type>    // fixed array
+    | '&' <type>                // pointer
+    | '&' "mut" <type>          // mut pointer
+    | '*' <type>                // multi pointer
+    | '*' "mut" <type>          // mut multi pointer
+    | void | u8 | u32 | i32 | usize | isize
+
+<tuple>(t) ::= '(' (t ',')* t? ')'
+
+<term> ::=
+    | "lambda" IDENT ':' <type> '.' <term>          // lambda
+    | IDENT <term>                                  // call
+    | "let" IDENT '=' <term> "in" <term>            // let expr
+    | "let" <tuple>(IDENT (':' <type>)?) '='
+        <term> "in" <term>                          // let destructure expr
+    | <tuple>(<term>)                               // tuple
+    | '"' CHAR* '"'                                 // string -> tuple
+    | <term> '[' <term> ']'                         // index
+    | IDENT                                         // identifier
+    | INTEGER                                       // integer
+
+<assign> ::=
+    | IDENT ':' <type> '=' <term>               // assign
+    | <tuple>(IDENT (':' <type>)?) '=' <term>   // assign destructure
+
+<program> ::= []<assign>
+
+
+// Builtin Functions
++, -, *, /, &, @cast
+    // Linux specific
+    @write, @read
+
+
+// Ir
+Const
+Point
+Cast
+Lambda a
+Copy a b
+Call c a b
+Ret a
